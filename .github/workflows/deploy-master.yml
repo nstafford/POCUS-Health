@@ -4,13 +4,35 @@ on:
   push:
     branches: ["master"]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      IMAGE_NAME: ghcr.io/nstafford/pocus-health-caddy:latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./deploy
+          file: ./deploy/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
 
       - name: Prepare deploy directory
         uses: appleboy/ssh-action@v1.0.3
@@ -21,13 +43,13 @@ jobs:
           script: |
             mkdir -p /opt/pocus-health
 
-      - name: Upload deploy assets
+      - name: Upload compose file
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.LINODE_HOST }}
           username: ${{ secrets.LINODE_USER }}
           key: ${{ secrets.LINODE_SSH_KEY }}
-          source: "deploy/*"
+          source: "deploy/docker-compose.yml"
           target: "/opt/pocus-health"
           strip_components: 1
 
@@ -40,4 +62,5 @@ jobs:
           script: |
             cd /opt/pocus-health
             docker compose down || true
+            docker compose pull
             docker compose up -d --force-recreate
