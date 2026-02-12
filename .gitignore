@@ -1,0 +1,74 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+
+# Env files
+.env
+.env.*
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+.eggs/
+.venv/
+venv/
+ENV/
+.envrc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+coverage/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+.dist/
+dist/
+build/
+.cache/
+.next/
+.out/
+.eslintcache
+.pnpm-store/
+
+# Web assets
+backend/static/desktop/
+backend/static/phone/
+web/desktop/dist/
+web/phone/dist/
+
+# Docker
+*.local
+**/docker-compose.override.yml
+
+# Certificates
+*.pem
+*.crt
+*.key
+
+# Misc
+*.tgz
+*.zip
+readme.neil
