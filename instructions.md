@@ -518,4 +518,4 @@ Definition of Done (MVP)
 
     If WebRTC fails, WS fallback still streams (at least basic sensor updates)
 
-    CI deploys dev and master via GitHub Actions automatically
+    CI deploys dev and master via GitHub Actions automatically.
