@@ -1,4 +1,17 @@
 :80
 
-root * /srv
-file_server
+# WebSocket signaling
+handle /ws {
+    reverse_proxy backend:8000
+}
+
+# API endpoints
+handle /api/* {
+    reverse_proxy backend:8000
+}
+
+# Static files
+handle {
+    root * /srv
+    file_server
+}

@@ -1,12 +1,21 @@
 services:
+  backend:
+    image: ghcr.io/nstafford/pocus-health-backend:latest
+    restart: unless-stopped
+    environment:
+      - PORT=8000
+
   caddy:
     image: ghcr.io/nstafford/pocus-health-caddy:latest
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - backend
 
 volumes:
   caddy_data:
