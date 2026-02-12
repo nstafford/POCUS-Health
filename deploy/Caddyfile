@@ -1,16 +1,33 @@
 :80
 
-# WebSocket signaling
+# Dev environment
+handle /dev/ws {
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Prefix /dev
+    }
+}
+
+handle /dev/api/* {
+    uri strip_prefix /dev
+    reverse_proxy localhost:8080
+}
+
+handle /dev/* {
+    uri strip_prefix /dev
+    reverse_proxy localhost:8080
+}
+
+# Prod WebSocket signaling
 handle /ws {
     reverse_proxy backend:8000
 }
 
-# API endpoints
+# Prod API endpoints
 handle /api/* {
     reverse_proxy backend:8000
 }
 
-# Static files
+# Prod static files
 handle {
     root * /srv
     file_server

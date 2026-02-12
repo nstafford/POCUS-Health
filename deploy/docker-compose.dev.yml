@@ -1,0 +1,24 @@
+services:
+  backend-dev:
+    image: ghcr.io/nstafford/pocus-health-backend:dev
+    restart: unless-stopped
+    container_name: pocus-backend-dev
+    environment:
+      - PORT=8001
+    networks:
+      - pocus-dev
+
+  caddy-dev:
+    image: ghcr.io/nstafford/pocus-health-caddy:dev
+    restart: unless-stopped
+    container_name: pocus-caddy-dev
+    ports:
+      - "8080:80"
+    networks:
+      - pocus-dev
+    depends_on:
+      - backend-dev
+
+networks:
+  pocus-dev:
+    name: pocus-dev
