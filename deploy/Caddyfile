@@ -1,33 +1,34 @@
-:80
+pocus.health {
+    # Prod WebSocket signaling
+    handle /ws {
+        reverse_proxy backend:8000
+    }
 
-# Dev environment
-handle /dev/ws {
-    uri strip_prefix /dev
-    reverse_proxy http://127.0.0.1:8001
+    # Prod API endpoints
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Prod static files
+    handle {
+        root * /srv
+        file_server
+    }
 }
 
-handle /dev/api/* {
-    uri strip_prefix /dev
-    reverse_proxy http://127.0.0.1:8001
-}
+dev.pocus.health {
+    # Dev WebSocket signaling
+    handle /ws {
+        reverse_proxy http://127.0.0.1:8001
+    }
 
-handle /dev/* {
-    uri strip_prefix /dev
-    reverse_proxy http://127.0.0.1:8001
-}
+    # Dev API endpoints
+    handle /api/* {
+        reverse_proxy http://127.0.0.1:8001
+    }
 
-# Prod WebSocket signaling
-handle /ws {
-    reverse_proxy backend:8000
-}
-
-# Prod API endpoints
-handle /api/* {
-    reverse_proxy backend:8000
-}
-
-# Prod static files
-handle {
-    root * /srv
-    file_server
+    # Dev root
+    handle {
+        reverse_proxy http://127.0.0.1:8001
+    }
 }

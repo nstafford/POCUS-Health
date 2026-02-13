@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CADDY_IMAGE: ghcr.io/nstafford/pocus-health-caddy:dev
       BACKEND_IMAGE: ghcr.io/nstafford/pocus-health-backend:dev
 
     steps:
@@ -26,14 +25,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Caddy image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./deploy
-          file: ./deploy/Dockerfile.dev
-          push: true
-          tags: ${{ env.CADDY_IMAGE }}
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v6

@@ -1,4 +1,0 @@
-FROM caddy:2-alpine
-
-COPY Caddyfile.dev /etc/caddy/Caddyfile
-COPY static/ /srv/
