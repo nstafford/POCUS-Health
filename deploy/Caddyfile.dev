@@ -1,0 +1,17 @@
+dev.pocus.health
+
+# Dev WebSocket signaling
+handle /ws {
+    reverse_proxy backend-dev:8000
+}
+
+# Dev API endpoints
+handle /api/* {
+    reverse_proxy backend-dev:8000
+}
+
+# Dev static files
+handle {
+    root * /srv
+    file_server
+}
