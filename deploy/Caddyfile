@@ -2,19 +2,18 @@
 
 # Dev environment
 handle /dev/ws {
-    reverse_proxy localhost:8080 {
-        header_up X-Forwarded-Prefix /dev
-    }
+    uri strip_prefix /dev
+    reverse_proxy http://localhost:8080
 }
 
 handle /dev/api/* {
     uri strip_prefix /dev
-    reverse_proxy localhost:8080
+    reverse_proxy http://localhost:8080
 }
 
 handle /dev/* {
     uri strip_prefix /dev
-    reverse_proxy localhost:8080
+    reverse_proxy http://localhost:8080
 }
 
 # Prod WebSocket signaling
