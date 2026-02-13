@@ -3,17 +3,17 @@
 # Dev environment
 handle /dev/ws {
     uri strip_prefix /dev
-    reverse_proxy http://localhost:8080
+    reverse_proxy http://127.0.0.1:8001
 }
 
 handle /dev/api/* {
     uri strip_prefix /dev
-    reverse_proxy http://localhost:8080
+    reverse_proxy http://127.0.0.1:8001
 }
 
 handle /dev/* {
     uri strip_prefix /dev
-    reverse_proxy http://localhost:8080
+    reverse_proxy http://127.0.0.1:8001
 }
 
 # Prod WebSocket signaling
