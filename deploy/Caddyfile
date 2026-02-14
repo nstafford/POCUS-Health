@@ -1,3 +1,7 @@
+http:// {
+    redir https://{host}{uri} permanent
+}
+
 pocus.health {
     # Prod WebSocket signaling
     handle /ws {
