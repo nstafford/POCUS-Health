@@ -31,8 +31,9 @@ dev.pocus.health {
         reverse_proxy http://127.0.0.1:8001
     }
 
-    # Dev root
+    # Dev static files
     handle {
-        reverse_proxy http://127.0.0.1:8001
+        root * /srv
+        file_server
     }
 }
