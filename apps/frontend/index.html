@@ -4,45 +4,355 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>POCUS-Health</title>
-    
+
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48x48.png" />
-    
+
     <!-- Apple touch icon -->
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-    
+
     <!-- Android Chrome icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png" />
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+              mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular"],
+            },
+            boxShadow: {
+              glow: "0 0 35px rgba(56, 189, 248, 0.25)",
+            },
+          },
+        },
+      };
+    </script>
+
     <style>
+      :root {
+        --ink: #0a0a0f;
+        --card: rgba(17, 24, 39, 0.75);
+        --stroke: rgba(148, 163, 184, 0.2);
+        --accent: #38bdf8;
+        --accent-strong: #0ea5e9;
+        --glow: rgba(14, 165, 233, 0.45);
+      }
+
       body {
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        background: #0b0b10;
-        color: #f5f5f7;
+        background: radial-gradient(circle at top, #0b1220 0%, #06070d 55%, #05050a 100%);
       }
-      .wrap {
-        text-align: center;
+
+      .grid-overlay {
+        background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.8), transparent 65%);
       }
-      img {
-        max-width: 200px;
-        height: auto;
-        display: block;
-        margin: 0 auto 16px;
+
+      .fade-in {
+        animation: fadeIn 0.9s ease-out both;
+      }
+
+      .float {
+        animation: float 8s ease-in-out infinite;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-12px);
+        }
       }
     </style>
   </head>
-  <body>
-    <div class="wrap">
-      <img src="images/otternion.png" alt="POCUS-Health icon" />
-      <h1>hello pocus-health</h1>
+  <body class="font-sans text-slate-100">
+    <div class="relative min-h-screen overflow-hidden">
+      <div class="pointer-events-none absolute inset-0 grid-overlay"></div>
+      <div class="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute bottom-0 left-0 h-96 w-96 rounded-full bg-sky-700/30 blur-[130px]"></div>
+
+      <div class="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12">
+        <header class="flex flex-col gap-4">
+          <div class="flex items-center gap-3 text-sm uppercase tracking-[0.35em] text-slate-400">
+            <span class="h-[1px] w-10 bg-slate-500"></span>
+            POCUS-Health
+          </div>
+          <div class="flex flex-col gap-3">
+            <h1 class="text-4xl font-semibold text-white md:text-5xl">
+              Live probe tracking for POCUS training
+            </h1>
+            <p class="max-w-2xl text-lg text-slate-300">
+              Pair a phone with a desktop session. The left canvas mirrors the scan screen. The right canvas links a phone and
+              renders the probe orientation in 3D once streaming begins.
+            </p>
+          </div>
+        </header>
+
+        <main class="grid gap-6 lg:grid-cols-2">
+          <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
+            <div class="flex items-center justify-between text-sm text-slate-300">
+              <span class="font-mono">POCUS SCREEN</span>
+              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Left canvas</span>
+            </div>
+            <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
+              <canvas id="pocusCanvas" class="h-full w-full"></canvas>
+              <div
+                class="pointer-events-none absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
+              >
+                Place POCUS scan image at images/pocus-screen.png
+              </div>
+            </div>
+          </section>
+
+          <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
+            <div class="flex items-center justify-between text-sm text-slate-300">
+              <span class="font-mono">PHONE LINK</span>
+              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Right canvas</span>
+            </div>
+            <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
+              <canvas id="probeCanvas" class="h-full w-full"></canvas>
+              <div
+                id="qrOverlay"
+                class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-slate-950/90 via-slate-950/75 to-slate-950/95 p-6 text-center"
+              >
+                <div class="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
+                  <span class="h-[1px] w-8 bg-slate-600"></span>
+                  Link Phone
+                  <span class="h-[1px] w-8 bg-slate-600"></span>
+                </div>
+                <div id="qrcode" class="rounded-2xl bg-white p-4 shadow-glow"></div>
+                <p class="max-w-xs text-sm text-slate-300">
+                  Scan the QR code to open the phone controller and allow motion access.
+                </p>
+                <a
+                  id="phoneLink"
+                  class="rounded-full border border-slate-600/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-slate-200 hover:border-sky-400 hover:text-sky-200"
+                  href="#"
+                  >Open on phone</a
+                >
+                <button
+                  id="simulateConnect"
+                  class="rounded-full bg-sky-500/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-950 transition hover:bg-sky-400"
+                  type="button"
+                >
+                  Preview probe
+                </button>
+              </div>
+              <div
+                id="probeStatus"
+                class="absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
+              >
+                Awaiting phone link
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="module">
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+      import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+
+      const pocusCanvas = document.querySelector("#pocusCanvas");
+      const probeCanvas = document.querySelector("#probeCanvas");
+      const qrOverlay = document.querySelector("#qrOverlay");
+      const phoneLink = document.querySelector("#phoneLink");
+      const simulateConnect = document.querySelector("#simulateConnect");
+      const probeStatus = document.querySelector("#probeStatus");
+
+      const phoneUrl = `${window.location.origin}/phone.html`;
+      phoneLink.href = phoneUrl;
+      phoneLink.textContent = phoneUrl.replace("https://", "");
+
+      new QRCode(document.querySelector("#qrcode"), {
+        text: phoneUrl,
+        width: 180,
+        height: 180,
+        colorDark: "#0a0a0f",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+
+      const drawPocusPlaceholder = (ctx, width, height) => {
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, "#0f172a");
+        gradient.addColorStop(0.5, "#111827");
+        gradient.addColorStop(1, "#020617");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+        for (let i = 0; i < 8; i += 1) {
+          ctx.strokeRect(18 + i * 6, 18 + i * 6, width - 36 - i * 12, height - 36 - i * 12);
+        }
+
+        ctx.fillStyle = "rgba(226, 232, 240, 0.8)";
+        ctx.font = "600 22px 'Space Grotesk', sans-serif";
+        ctx.fillText("POCUS SCREEN", 30, 45);
+        ctx.font = "14px 'IBM Plex Mono', monospace";
+        ctx.fillText("Image placeholder", 30, 68);
+      };
+
+      const renderPocusCanvas = (image) => {
+        const ctx = pocusCanvas.getContext("2d");
+        const { width, height } = pocusCanvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        pocusCanvas.width = Math.floor(width * ratio);
+        pocusCanvas.height = Math.floor(height * ratio);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(ratio, ratio);
+
+        if (image && image.complete && image.naturalWidth > 0) {
+          ctx.drawImage(image, 0, 0, width, height);
+        } else {
+          drawPocusPlaceholder(ctx, width, height);
+        }
+      };
+
+      const pocusImage = new Image();
+      pocusImage.onload = () => renderPocusCanvas(pocusImage);
+      pocusImage.onerror = () => renderPocusCanvas(null);
+      pocusImage.src = "images/pocus-screen.png";
+
+      window.addEventListener("resize", () => {
+        renderPocusCanvas(pocusImage);
+        resizeThreeScene();
+      });
+
+      let modelGroup = null;
+      let renderer = null;
+      let camera = null;
+      let scene = null;
+
+      const setupThreeScene = () => {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color("#020617");
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambient);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
+        keyLight.position.set(2, 4, 6);
+        scene.add(keyLight);
+
+        const rimLight = new THREE.PointLight(0x38bdf8, 0.6, 10);
+        rimLight.position.set(-3, 1, 2);
+        scene.add(rimLight);
+
+        camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+        camera.position.set(0, 1.5, 4);
+
+        renderer = new THREE.WebGLRenderer({
+          canvas: probeCanvas,
+          antialias: true,
+          alpha: true,
+        });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        resizeThreeScene();
+
+        const loader = new GLTFLoader();
+        const modelUrl = "images/Convex%20Transducer%20by%20Qadamian.STL.glb";
+        loader.load(
+          modelUrl,
+          (gltf) => {
+            modelGroup = gltf.scene;
+            modelGroup.scale.set(1.4, 1.4, 1.4);
+            modelGroup.position.set(0, -0.6, 0);
+            scene.add(modelGroup);
+          },
+          undefined,
+          () => {
+            probeStatus.textContent = "Failed to load probe model";
+          }
+        );
+
+        const animate = () => {
+          requestAnimationFrame(animate);
+          renderer.render(scene, camera);
+        };
+        animate();
+      };
+
+      const resizeThreeScene = () => {
+        if (!renderer || !camera) {
+          return;
+        }
+        const { width, height } = probeCanvas.getBoundingClientRect();
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
+
+      const applyOrientation = ({ alpha, beta, gamma }) => {
+        if (!modelGroup) {
+          return;
+        }
+        const toRad = THREE.MathUtils.degToRad;
+        const x = typeof beta === "number" ? toRad(beta) : 0;
+        const y = typeof gamma === "number" ? toRad(gamma) : 0;
+        const z = typeof alpha === "number" ? toRad(alpha) : 0;
+        modelGroup.rotation.set(x, y, z);
+      };
+
+      const startProbeView = () => {
+        if (qrOverlay.classList.contains("hidden")) {
+          return;
+        }
+        qrOverlay.classList.add("hidden");
+        probeStatus.textContent = "Streaming orientation";
+      };
+
+      simulateConnect.addEventListener("click", () => {
+        startProbeView();
+        probeStatus.textContent = "Preview mode active";
+        window.addEventListener("mousemove", (event) => {
+          const alpha = (event.clientX / window.innerWidth) * 180 - 90;
+          const beta = (event.clientY / window.innerHeight) * 90 - 45;
+          applyOrientation({ alpha, beta, gamma: 0 });
+        });
+      });
+
+      setupThreeScene();
+
+      const channel = new BroadcastChannel("pocus-orientation");
+      channel.addEventListener("message", (event) => {
+        if (!event.data) {
+          return;
+        }
+        const { alpha, beta, gamma } = event.data;
+        startProbeView();
+        applyOrientation({ alpha, beta, gamma });
+      });
+    </script>
   </body>
 </html>

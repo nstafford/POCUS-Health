@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>POCUS-Health Phone</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+              mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        background: radial-gradient(circle at top, #101827 0%, #0a0f1f 45%, #05070d 100%);
+      }
+
+      .pulse {
+        animation: pulse 2.6s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.03);
+          opacity: 0.85;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen font-sans text-slate-100">
+    <div class="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-6 py-10">
+      <header class="flex flex-col gap-3">
+        <div class="text-xs uppercase tracking-[0.35em] text-slate-400">POCUS-Health</div>
+        <h1 class="text-3xl font-semibold text-white">Phone controller</h1>
+        <p class="text-sm text-slate-300">
+          Grant motion access so the desktop probe model can mirror your phone orientation.
+        </p>
+      </header>
+
+      <section class="flex flex-col gap-4 rounded-3xl border border-slate-700/60 bg-slate-900/80 p-5">
+        <div class="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
+          <span>Probe</span>
+          <span class="font-mono" id="sessionLabel">Session: local</span>
+        </div>
+        <div class="overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-950">
+          <img
+            src="images/4vc-d-large.jpg"
+            alt="POCUS probe"
+            class="pulse h-64 w-full object-cover"
+          />
+        </div>
+        <div class="text-xs text-slate-400">
+          Keep the phone steady and point the probe face down.
+        </div>
+      </section>
+
+      <section class="flex flex-col gap-4 rounded-3xl border border-slate-700/60 bg-slate-900/80 p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-sm uppercase tracking-[0.25em] text-slate-400">Motion</span>
+          <span id="status" class="text-xs text-slate-400">Waiting for permission</span>
+        </div>
+        <button
+          id="enableButton"
+          class="rounded-full bg-sky-500/90 px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-950 transition hover:bg-sky-400"
+          type="button"
+        >
+          Enable motion
+        </button>
+        <div class="grid grid-cols-3 gap-3 text-xs text-slate-300">
+          <div class="rounded-2xl border border-slate-700/60 bg-slate-950/60 px-3 py-3">
+            <div class="text-[0.65rem] uppercase tracking-[0.25em] text-slate-400">Alpha</div>
+            <div id="alpha" class="mt-1 font-mono text-base">--</div>
+          </div>
+          <div class="rounded-2xl border border-slate-700/60 bg-slate-950/60 px-3 py-3">
+            <div class="text-[0.65rem] uppercase tracking-[0.25em] text-slate-400">Beta</div>
+            <div id="beta" class="mt-1 font-mono text-base">--</div>
+          </div>
+          <div class="rounded-2xl border border-slate-700/60 bg-slate-950/60 px-3 py-3">
+            <div class="text-[0.65rem] uppercase tracking-[0.25em] text-slate-400">Gamma</div>
+            <div id="gamma" class="mt-1 font-mono text-base">--</div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="text-center text-xs text-slate-500">
+        If prompted on iOS, tap Allow Motion & Orientation Access.
+      </footer>
+    </div>
+
+    <script>
+      const enableButton = document.querySelector("#enableButton");
+      const statusEl = document.querySelector("#status");
+      const alphaEl = document.querySelector("#alpha");
+      const betaEl = document.querySelector("#beta");
+      const gammaEl = document.querySelector("#gamma");
+      const sessionLabel = document.querySelector("#sessionLabel");
+      const channel = new BroadcastChannel("pocus-orientation");
+
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("sessionId");
+      if (sessionId) {
+        sessionLabel.textContent = `Session: ${sessionId}`;
+      }
+
+      const updateValues = (alpha, beta, gamma) => {
+        alphaEl.textContent = typeof alpha === "number" ? alpha.toFixed(1) : "--";
+        betaEl.textContent = typeof beta === "number" ? beta.toFixed(1) : "--";
+        gammaEl.textContent = typeof gamma === "number" ? gamma.toFixed(1) : "--";
+      };
+
+      const handleOrientation = (event) => {
+        const payload = {
+          alpha: event.alpha,
+          beta: event.beta,
+          gamma: event.gamma,
+          ts: Date.now(),
+        };
+        updateValues(payload.alpha, payload.beta, payload.gamma);
+        channel.postMessage(payload);
+      };
+
+      const startListening = () => {
+        window.addEventListener("deviceorientation", handleOrientation, true);
+        statusEl.textContent = "Streaming";
+        enableButton.disabled = true;
+        enableButton.classList.add("opacity-50");
+      };
+
+      const requestPermission = async () => {
+        if (
+          typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+          try {
+            const response = await DeviceOrientationEvent.requestPermission();
+            if (response === "granted") {
+              startListening();
+            } else {
+              statusEl.textContent = "Permission denied";
+            }
+          } catch (error) {
+            statusEl.textContent = "Permission error";
+          }
+        } else {
+          startListening();
+        }
+      };
+
+      enableButton.addEventListener("click", requestPermission);
+    </script>
+  </body>
+</html>
