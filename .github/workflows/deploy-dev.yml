@@ -2,7 +2,7 @@ name: Deploy (dev)
 
 on:
   push:
-    branches: ["development"]
+    branches: ["dev"]
 
 permissions:
   contents: read
@@ -29,8 +29,8 @@ jobs:
       - name: Build and push Backend image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
           push: true
           tags: ${{ env.BACKEND_IMAGE }}
 
