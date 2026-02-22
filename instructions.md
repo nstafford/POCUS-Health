@@ -173,7 +173,7 @@ Set these in GitHub repo → Settings → Secrets and variables → Actions:
 
 ---
 
-## Backend API Reference
+## Backend API Reference for signaling server and session
 
 ### POST `/api/session`
 
