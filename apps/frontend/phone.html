@@ -115,13 +115,12 @@
       const betaEl = document.querySelector("#beta");
       const gammaEl = document.querySelector("#gamma");
       const sessionLabel = document.querySelector("#sessionLabel");
-      const channel = new BroadcastChannel("pocus-orientation");
+      const channel = new BroadcastChannel(`pocus-orientation:${window.location.pathname}`);
 
       const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("sessionId");
-      if (sessionId) {
-        sessionLabel.textContent = `Session: ${sessionId}`;
-      }
+      const sessionId = params.get("session") || "local";
+      const shortId = sessionId === "local" ? "local" : sessionId.substring(0, 8);
+      sessionLabel.textContent = `Session: ${shortId}`;
 
       const updateValues = (alpha, beta, gamma) => {
         alphaEl.textContent = typeof alpha === "number" ? alpha.toFixed(1) : "--";
@@ -131,6 +130,7 @@
 
       const handleOrientation = (event) => {
         const payload = {
+          sessionId,
           alpha: event.alpha,
           beta: event.beta,
           gamma: event.gamma,
@@ -142,7 +142,7 @@
 
       const startListening = () => {
         window.addEventListener("deviceorientation", handleOrientation, true);
-        statusEl.textContent = "Streaming";
+        statusEl.textContent = `Streaming (${shortId})`;
         enableButton.disabled = true;
         enableButton.classList.add("opacity-50");
       };

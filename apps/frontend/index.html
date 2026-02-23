@@ -190,7 +190,8 @@
       const simulateConnect = document.querySelector("#simulateConnect");
       const probeStatus = document.querySelector("#probeStatus");
 
-      const phoneUrl = `${window.location.origin}/phone.html`;
+      const sessionId = crypto.randomUUID();
+      const phoneUrl = `${window.location.origin}/phone.html?session=${sessionId}`;
       phoneLink.href = phoneUrl;
       phoneLink.textContent = phoneUrl.replace("https://", "");
 
@@ -344,7 +345,7 @@
 
       setupThreeScene();
 
-      const channel = new BroadcastChannel("pocus-orientation");
+      const channel = new BroadcastChannel(`pocus-orientation:${sessionId}`);
       channel.addEventListener("message", (event) => {
         if (!event.data) {
           return;
