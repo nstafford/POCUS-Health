@@ -34,6 +34,14 @@ jobs:
           push: true
           tags: ${{ env.BACKEND_IMAGE }}
 
+      - name: Build and push Caddy image (dev tag)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./deploy/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/pocus-health-caddy:dev
+
       - name: Prepare deploy directory
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -64,22 +72,7 @@ jobs:
             docker compose -f docker-compose.dev.yml down || true
             docker compose -f docker-compose.dev.yml pull
             docker compose -f docker-compose.dev.yml up -d --force-recreate
-      
-      - name: Build and push Caddy image (dev tag)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./deploy
-          file: ./deploy/Dockerfile
-          push: true
-          tags: ghcr.io/nstafford/pocus-health-caddy:dev
-      
-      - name: Restart Caddy on Linode
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.LINODE_HOST }}
-          username: ${{ secrets.LINODE_USER }}
-          key: ${{ secrets.LINODE_SSH_KEY }}
-          script: |
+            
             cd /opt/pocus-health
             docker compose pull
             docker compose up -d --force-recreate caddy
