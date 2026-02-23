@@ -195,14 +195,24 @@
       phoneLink.href = phoneUrl;
       phoneLink.textContent = phoneUrl.replace("https://", "");
 
-      new QRCode(document.querySelector("#qrcode"), {
-        text: phoneUrl,
-        width: 180,
-        height: 180,
-        colorDark: "#0a0a0f",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H,
-      });
+      console.log("Phone URL:", phoneUrl);
+      console.log("QRCode library available:", typeof QRCode !== "undefined");
+
+      setTimeout(() => {
+        const qrContainer = document.querySelector("#qrcode");
+        if (qrContainer) {
+          qrContainer.innerHTML = "";
+          new QRCode(qrContainer, {
+            text: phoneUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H,
+          });
+          console.log("QR code generated");
+        }
+      }, 100);
 
       const drawPocusPlaceholder = (ctx, width, height) => {
         const gradient = ctx.createLinearGradient(0, 0, width, height);
