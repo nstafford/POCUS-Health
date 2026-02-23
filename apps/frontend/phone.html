@@ -14,6 +14,9 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      if (typeof tailwind !== "undefined") {
+        tailwind.configure = { corePlugins: { preflight: false } };
+      }
       tailwind.config = {
         theme: {
           extend: {

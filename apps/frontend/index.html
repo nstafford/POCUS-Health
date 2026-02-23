@@ -27,6 +27,9 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      if (typeof tailwind !== "undefined") {
+        tailwind.configure = { corePlugins: { preflight: false } };
+      }
       tailwind.config = {
         theme: {
           extend: {
@@ -178,10 +181,18 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
     <script type="module">
-      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
-      import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+      import * as THREE from "three";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
       const pocusCanvas = document.querySelector("#pocusCanvas");
       const probeCanvas = document.querySelector("#probeCanvas");
