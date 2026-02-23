@@ -123,22 +123,21 @@
           <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">POCUS SCREEN</span>
-              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Left canvas</span>
             </div>
             <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="pocusCanvas" class="h-full w-full"></canvas>
-              <div
-                class="pointer-events-none absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
-              >
-                Place POCUS scan image at images/pocus-screen.png
-              </div>
             </div>
           </section>
 
           <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">PHONE LINK</span>
-              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Right canvas</span>
+              <div
+                id="probeStatus"
+                class="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
+              >
+                Awaiting phone link
+              </div>
             </div>
             <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="probeCanvas" class="h-full w-full"></canvas>
@@ -168,12 +167,6 @@
                 >
                   Preview probe
                 </button>
-              </div>
-              <div
-                id="probeStatus"
-                class="absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
-              >
-                Awaiting phone link
               </div>
             </div>
           </section>
