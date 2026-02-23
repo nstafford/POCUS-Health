@@ -182,9 +182,21 @@
     </div>
     
     <script async src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+					"GLTFLoader": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
+				}
+			}
+		</script>
+
     <script type="module">
-      import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
-      import { GLTFLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+      // import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
+      import * as THREE from 'three';
+      // import { GLTFLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+      import { GLTFLoader } from "GLTFLoader";
 
       const pocusCanvas = document.querySelector("#pocusCanvas");
       const probeCanvas = document.querySelector("#probeCanvas");
