@@ -1,11 +1,13 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
 import secrets
 from typing import Dict, Optional
 import asyncio
 from datetime import datetime, timedelta
+import os
 
 app = FastAPI(title="POCUS-Health Signaling Server")
 
@@ -191,6 +193,12 @@ async def cleanup_sessions():
 async def startup_event():
     """Start background tasks."""
     asyncio.create_task(cleanup_sessions())
+
+
+# Mount static files (frontend) - must be last
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 
 if __name__ == "__main__":

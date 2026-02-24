@@ -3,5 +3,12 @@ services:
     image: ghcr.io/nstafford/pocus-health-backend:dev
     restart: unless-stopped
     container_name: pocus-backend-dev
-    ports:
-      - "127.0.0.1:8001:8000"
+    environment:
+      - PORT=8000
+    networks:
+      - default
+
+networks:
+  default:
+    name: pocus-health_default
+    external: true
