@@ -171,6 +171,22 @@
             </div>
           </section>
         </main>
+
+        <section class="fade-in rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-4 shadow-2xl">
+          <div class="mb-3 flex items-center justify-between">
+            <span class="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">Connection Debug</span>
+            <span
+              id="transportStatus"
+              class="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300"
+            >
+              Waiting
+            </span>
+          </div>
+          <pre
+            id="debugLog"
+            class="max-h-32 overflow-auto rounded-xl border border-slate-700/70 bg-slate-950/80 p-3 font-mono text-[11px] leading-5 text-slate-300"
+          ></pre>
+        </section>
       </div>
     </div>
     
@@ -197,14 +213,35 @@
       const phoneLink = document.querySelector("#phoneLink");
       const simulateConnect = document.querySelector("#simulateConnect");
       const probeStatus = document.querySelector("#probeStatus");
+      const transportStatus = document.querySelector("#transportStatus");
+      const debugLog = document.querySelector("#debugLog");
+
+      const logDebug = (message) => {
+        const stamp = new Date().toLocaleTimeString();
+        const line = `[${stamp}] ${message}`;
+        console.log(line);
+        debugLog.textContent = `${line}\n${debugLog.textContent}`.slice(0, 3500);
+      };
+
+      const setConnectionState = ({ state, transport, detail }) => {
+        const transportText = transport || "none";
+        transportStatus.textContent = `${state} · ${transportText}`;
+        probeStatus.textContent = `${state} (${transportText})`;
+        if (detail) {
+          logDebug(`${state} via ${transportText}: ${detail}`);
+        } else {
+          logDebug(`${state} via ${transportText}`);
+        }
+      };
 
       const sessionId = crypto.randomUUID();
       const phoneUrl = `${window.location.origin}/phone.html?session=${sessionId}`;
       phoneLink.href = phoneUrl;
       phoneLink.textContent = phoneUrl.replace("https://", "");
 
-      console.log("Phone URL:", phoneUrl);
-      console.log("QRCode library available:", typeof QRCode !== "undefined");
+      logDebug(`Session created: ${sessionId}`);
+      logDebug(`Phone URL: ${phoneUrl}`);
+      logDebug(`QRCode library available: ${typeof QRCode !== "undefined"}`);
 
       setTimeout(() => {
         const qrContainer = document.querySelector("#qrcode");
@@ -218,7 +255,7 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H,
           });
-          console.log("QR code generated");
+          logDebug("QR code generated");
         }
       }, 100);
 
@@ -312,7 +349,7 @@
           },
           undefined,
           () => {
-            probeStatus.textContent = "Failed to load probe model";
+            setConnectionState({ state: "Error", transport: "3D", detail: "Failed to load probe model" });
           }
         );
 
@@ -344,17 +381,17 @@
         modelGroup.rotation.set(x, y, z);
       };
 
-      const startProbeView = () => {
+      const startProbeView = (transport = "unknown") => {
         if (qrOverlay.classList.contains("hidden")) {
           return;
         }
         qrOverlay.classList.add("hidden");
-        probeStatus.textContent = "Streaming orientation";
+        setConnectionState({ state: "Connected", transport });
       };
 
       simulateConnect.addEventListener("click", () => {
-        startProbeView();
-        probeStatus.textContent = "Preview mode active";
+        startProbeView("preview");
+        setConnectionState({ state: "Connected", transport: "preview", detail: "Mouse simulation active" });
         window.addEventListener("mousemove", (event) => {
           const alpha = (event.clientX / window.innerWidth) * 180 - 90;
           const beta = (event.clientY / window.innerHeight) * 90 - 45;
@@ -369,10 +406,27 @@
         if (!event.data) {
           return;
         }
-        const { alpha, beta, gamma } = event.data;
-        startProbeView();
+        const { alpha, beta, gamma, transport } = event.data;
+        const resolvedTransport = transport === "webrtc" ? "webrtc-direct" : "fallback-channel";
+        startProbeView(resolvedTransport);
+        setConnectionState({ state: "Connected", transport: resolvedTransport, detail: "Orientation payload received" });
         applyOrientation({ alpha, beta, gamma });
       });
+
+      window.addEventListener("pocus:webrtc-state", (event) => {
+        const detail = event.detail || {};
+        if (detail.state === "connected") {
+          startProbeView("webrtc-direct");
+          setConnectionState({ state: "Connected", transport: "webrtc-direct", detail: "DataChannel open" });
+        } else if (detail.state === "fallback") {
+          startProbeView("fallback-ws");
+          setConnectionState({ state: "Connected", transport: "fallback-ws", detail: "Using websocket fallback" });
+        } else if (detail.state) {
+          setConnectionState({ state: detail.state, transport: detail.transport || "pending", detail: detail.note });
+        }
+      });
+
+      setConnectionState({ state: "Waiting", transport: "none", detail: "Waiting for phone link and transport handshake" });
     </script>
   </body>
 </html>
