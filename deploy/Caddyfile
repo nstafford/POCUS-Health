@@ -23,12 +23,12 @@ pocus.health {
 dev.pocus.health {
     # Dev WebSocket signaling
     handle /ws {
-        reverse_proxy http://127.0.0.1:8001
+        reverse_proxy http://host.docker.internal:8001
     }
 
     # Dev API endpoints
     handle /api/* {
-        reverse_proxy http://127.0.0.1:8001
+        reverse_proxy http://host.docker.internal:8001
     }
 
     # Dev static files
