@@ -61,5 +61,5 @@ jobs:
           key: ${{ secrets.LINODE_SSH_KEY }}
           script: |
             cd /opt/pocus-health-dev
-            docker compose pull
-            docker compose up -d --force-recreate
+            docker compose -f docker-compose.dev.yml pull
+            docker compose -f docker-compose.dev.yml up -d --force-recreate
