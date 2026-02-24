@@ -118,12 +118,21 @@
       const betaEl = document.querySelector("#beta");
       const gammaEl = document.querySelector("#gamma");
       const sessionLabel = document.querySelector("#sessionLabel");
-      const channel = new BroadcastChannel(`pocus-orientation:${window.location.pathname}`);
 
       const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session") || "local";
-      const shortId = sessionId === "local" ? "local" : sessionId.substring(0, 8);
+      const sessionId = params.get("sessionId") || params.get("session") || "";
+      const token = params.get("token") || "";
+      const shortId = sessionId ? sessionId.substring(0, 8) : "missing";
       sessionLabel.textContent = `Session: ${shortId}`;
+
+      let ws = null;
+      let peerConnection = null;
+      let sensorDataChannel = null;
+      let orientationEnabled = false;
+
+      const setStatus = (message) => {
+        statusEl.textContent = message;
+      };
 
       const updateValues = (alpha, beta, gamma) => {
         alphaEl.textContent = typeof alpha === "number" ? alpha.toFixed(1) : "--";
@@ -131,21 +140,62 @@
         gammaEl.textContent = typeof gamma === "number" ? gamma.toFixed(1) : "--";
       };
 
+      const sendSignal = (payload) => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          return;
+        }
+        ws.send(JSON.stringify(payload));
+      };
+
+      const initializeWebRTC = () => {
+        peerConnection = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        peerConnection.ondatachannel = (event) => {
+          sensorDataChannel = event.channel;
+
+          sensorDataChannel.onopen = () => {
+            setStatus(`Streaming (${shortId}) over WebRTC`);
+          };
+
+          sensorDataChannel.onclose = () => {
+            setStatus("DataChannel closed (fallback to WS)");
+          };
+        };
+
+        peerConnection.onicecandidate = (event) => {
+          if (!event.candidate) {
+            return;
+          }
+          sendSignal({ type: "ice-candidate", data: event.candidate });
+        };
+      };
+
       const handleOrientation = (event) => {
         const payload = {
-          sessionId,
           alpha: event.alpha,
           beta: event.beta,
           gamma: event.gamma,
           ts: Date.now(),
         };
+
         updateValues(payload.alpha, payload.beta, payload.gamma);
-        channel.postMessage(payload);
+
+        if (sensorDataChannel && sensorDataChannel.readyState === "open") {
+          sensorDataChannel.send(JSON.stringify(payload));
+        } else {
+          sendSignal({ type: "sensor", data: payload });
+        }
       };
 
       const startListening = () => {
+        if (orientationEnabled) {
+          return;
+        }
+        orientationEnabled = true;
         window.addEventListener("deviceorientation", handleOrientation, true);
-        statusEl.textContent = `Streaming (${shortId})`;
+        setStatus(`Streaming (${shortId})`);
         enableButton.disabled = true;
         enableButton.classList.add("opacity-50");
       };
@@ -160,16 +210,72 @@
             if (response === "granted") {
               startListening();
             } else {
-              statusEl.textContent = "Permission denied";
+              setStatus("Permission denied");
             }
-          } catch (error) {
-            statusEl.textContent = "Permission error";
+          } catch {
+            setStatus("Permission error");
           }
         } else {
           startListening();
         }
       };
 
+      const initializeSignaling = () => {
+        if (!sessionId || !token) {
+          setStatus("Missing session or token");
+          return;
+        }
+
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws`);
+
+        ws.onopen = () => {
+          sendSignal({
+            type: "hello",
+            role: "phone",
+            sessionId,
+            token,
+          });
+          setStatus("Connected to signaling");
+        };
+
+        ws.onmessage = async (event) => {
+          const message = JSON.parse(event.data);
+
+          if (message.type === "offer" && message.sdp) {
+            await peerConnection.setRemoteDescription({ type: "offer", sdp: message.sdp });
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            sendSignal({ type: "answer", sdp: answer.sdp });
+            return;
+          }
+
+          if (message.type === "ice-candidate" && message.data) {
+            await peerConnection.addIceCandidate(message.data);
+            return;
+          }
+
+          if (message.type === "peer-disconnected") {
+            setStatus("Desktop disconnected");
+            return;
+          }
+
+          if (message.type === "error") {
+            setStatus(message.message || "Signaling error");
+          }
+        };
+
+        ws.onerror = () => {
+          setStatus("WebSocket error");
+        };
+
+        ws.onclose = () => {
+          setStatus("WebSocket closed");
+        };
+      };
+
+      initializeWebRTC();
+      initializeSignaling();
       enableButton.addEventListener("click", requestPermission);
     </script>
   </body>
