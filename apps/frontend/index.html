@@ -27,6 +27,9 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      if (typeof tailwind !== "undefined") {
+        tailwind.configure = { corePlugins: { preflight: false } };
+      }
       tailwind.config = {
         theme: {
           extend: {
@@ -120,22 +123,21 @@
           <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">POCUS SCREEN</span>
-              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Left canvas</span>
             </div>
             <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="pocusCanvas" class="h-full w-full"></canvas>
-              <div
-                class="pointer-events-none absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
-              >
-                Place POCUS scan image at images/pocus-screen.png
-              </div>
             </div>
           </section>
 
           <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">PHONE LINK</span>
-              <span class="rounded-full border border-slate-600/70 px-3 py-1 text-xs text-slate-400">Right canvas</span>
+              <div
+                id="probeStatus"
+                class="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
+              >
+                Awaiting phone link
+              </div>
             </div>
             <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="probeCanvas" class="h-full w-full"></canvas>
@@ -166,22 +168,42 @@
                   Preview probe
                 </button>
               </div>
-              <div
-                id="probeStatus"
-                class="absolute bottom-4 left-4 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-2 text-xs text-slate-300"
-              >
-                Awaiting phone link
-              </div>
             </div>
           </section>
         </main>
+
+        <section class="fade-in rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-4 shadow-2xl">
+          <div class="mb-3 flex items-center justify-between">
+            <span class="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">Connection Debug</span>
+            <span
+              id="transportStatus"
+              class="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300"
+            >
+              Waiting
+            </span>
+          </div>
+          <pre
+            id="debugLog"
+            class="max-h-32 overflow-auto rounded-xl border border-slate-700/70 bg-slate-950/80 p-3 font-mono text-[11px] leading-5 text-slate-300"
+          ></pre>
+        </section>
       </div>
     </div>
+    
+    <script async src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+					"GLTFLoader": "https://unpkg.com/three@0.150.0/examples/jsm/loaders/GLTFLoader.js"
+				}
+			}
+		</script>
+
     <script type="module">
-      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
-      import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+      import * as THREE from "three";
+      import { GLTFLoader } from "GLTFLoader";
 
       const pocusCanvas = document.querySelector("#pocusCanvas");
       const probeCanvas = document.querySelector("#probeCanvas");
@@ -189,19 +211,37 @@
       const phoneLink = document.querySelector("#phoneLink");
       const simulateConnect = document.querySelector("#simulateConnect");
       const probeStatus = document.querySelector("#probeStatus");
+      const transportStatus = document.querySelector("#transportStatus");
+      const debugLog = document.querySelector("#debugLog");
 
-      const phoneUrl = `${window.location.origin}/phone.html`;
-      phoneLink.href = phoneUrl;
-      phoneLink.textContent = phoneUrl.replace("https://", "");
+      let ws = null;
+      let peerConnection = null;
+      let sensorDataChannel = null;
+      let offerSent = false;
 
-      new QRCode(document.querySelector("#qrcode"), {
-        text: phoneUrl,
-        width: 180,
-        height: 180,
-        colorDark: "#0a0a0f",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H,
-      });
+      const sessionState = {
+        sessionId: null,
+        token: null,
+        phoneUrl: null,
+      };
+
+      const logDebug = (message) => {
+        const stamp = new Date().toLocaleTimeString();
+        const line = `[${stamp}] ${message}`;
+        console.log(line);
+        debugLog.textContent = `${line}\n${debugLog.textContent}`.slice(0, 5000);
+      };
+
+      const setConnectionState = ({ state, transport, detail }) => {
+        const transportText = transport || "none";
+        transportStatus.textContent = `${state} · ${transportText}`;
+        probeStatus.textContent = `${state} (${transportText})`;
+        if (detail) {
+          logDebug(`${state} via ${transportText}: ${detail}`);
+        } else {
+          logDebug(`${state} via ${transportText}`);
+        }
+      };
 
       const drawPocusPlaceholder = (ctx, width, height) => {
         const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -244,11 +284,6 @@
       pocusImage.onerror = () => renderPocusCanvas(null);
       pocusImage.src = "images/pocus-screen.png";
 
-      window.addEventListener("resize", () => {
-        renderPocusCanvas(pocusImage);
-        resizeThreeScene();
-      });
-
       let modelGroup = null;
       let renderer = null;
       let camera = null;
@@ -281,7 +316,7 @@
         resizeThreeScene();
 
         const loader = new GLTFLoader();
-        const modelUrl = "images/Convex%20Transducer%20by%20Qadamian.STL.glb";
+        const modelUrl = "images/probe.glb";
         loader.load(
           modelUrl,
           (gltf) => {
@@ -292,7 +327,7 @@
           },
           undefined,
           () => {
-            probeStatus.textContent = "Failed to load probe model";
+            setConnectionState({ state: "Error", transport: "3D", detail: "Failed to load probe model" });
           }
         );
 
@@ -324,17 +359,193 @@
         modelGroup.rotation.set(x, y, z);
       };
 
-      const startProbeView = () => {
-        if (qrOverlay.classList.contains("hidden")) {
+      const startProbeView = (transport = "unknown") => {
+        if (!qrOverlay.classList.contains("hidden")) {
+          qrOverlay.classList.add("hidden");
+        }
+        setConnectionState({ state: "Connected", transport });
+      };
+
+      const waitForQRCode = async () => {
+        for (let i = 0; i < 60; i += 1) {
+          if (typeof window.QRCode !== "undefined") {
+            return true;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        return false;
+      };
+
+      const renderQR = async () => {
+        const qrReady = await waitForQRCode();
+        const qrContainer = document.querySelector("#qrcode");
+        qrContainer.innerHTML = "";
+
+        if (!qrReady) {
+          logDebug("QRCode library failed to load");
+          qrContainer.textContent = "QR unavailable";
           return;
         }
-        qrOverlay.classList.add("hidden");
-        probeStatus.textContent = "Streaming orientation";
+
+        new QRCode(qrContainer, {
+          text: sessionState.phoneUrl,
+          width: 200,
+          height: 200,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H,
+        });
+        logDebug("QR code generated");
+      };
+
+      const sendSignal = (payload) => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          return;
+        }
+        ws.send(JSON.stringify(payload));
+      };
+
+      const maybeCreateOffer = async () => {
+        if (!peerConnection || offerSent || !sessionState.sessionId) {
+          return;
+        }
+        offerSent = true;
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        sendSignal({ type: "offer", sdp: offer.sdp });
+        logDebug("Offer sent");
+      };
+
+      const initializeWebRTC = () => {
+        peerConnection = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        sensorDataChannel = peerConnection.createDataChannel("sensor", {
+          ordered: false,
+          maxRetransmits: 0,
+        });
+
+        sensorDataChannel.onopen = () => {
+          startProbeView("webrtc-direct");
+          logDebug("WebRTC DataChannel open");
+        };
+
+        sensorDataChannel.onclose = () => {
+          setConnectionState({ state: "Disconnected", transport: "webrtc-direct", detail: "DataChannel closed" });
+        };
+
+        sensorDataChannel.onerror = () => {
+          setConnectionState({ state: "Error", transport: "webrtc-direct", detail: "DataChannel error" });
+        };
+
+        sensorDataChannel.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            applyOrientation(payload);
+            startProbeView("webrtc-direct");
+          } catch {
+            logDebug("Invalid DataChannel packet");
+          }
+        };
+
+        peerConnection.onicecandidate = (event) => {
+          if (!event.candidate) {
+            return;
+          }
+          sendSignal({ type: "ice-candidate", data: event.candidate });
+        };
+
+        peerConnection.onconnectionstatechange = () => {
+          logDebug(`PeerConnection state: ${peerConnection.connectionState}`);
+        };
+      };
+
+      const initializeSignaling = async () => {
+        const response = await fetch("/api/session", { method: "POST" });
+        if (!response.ok) {
+          throw new Error("Failed to create session");
+        }
+        const session = await response.json();
+
+        sessionState.sessionId = session.sessionId;
+        sessionState.token = session.token;
+        sessionState.phoneUrl = `${window.location.origin}/phone.html?sessionId=${encodeURIComponent(session.sessionId)}&token=${encodeURIComponent(session.token)}`;
+        phoneLink.href = sessionState.phoneUrl;
+        phoneLink.textContent = sessionState.phoneUrl.replace("https://", "");
+
+        logDebug(`Session created: ${sessionState.sessionId}`);
+        logDebug(`Phone URL: ${sessionState.phoneUrl}`);
+
+        await renderQR();
+
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws`);
+
+        ws.onopen = () => {
+          sendSignal({
+            type: "hello",
+            role: "desktop",
+            sessionId: sessionState.sessionId,
+            token: sessionState.token,
+          });
+          setConnectionState({ state: "Signaling", transport: "ws", detail: "Desktop hello sent" });
+        };
+
+        ws.onclose = () => {
+          setConnectionState({ state: "Disconnected", transport: "ws", detail: "Signaling socket closed" });
+        };
+
+        ws.onerror = () => {
+          setConnectionState({ state: "Error", transport: "ws", detail: "Signaling socket error" });
+        };
+
+        ws.onmessage = async (event) => {
+          const message = JSON.parse(event.data);
+
+          if (message.type === "ready") {
+            logDebug("Signaling ready");
+            return;
+          }
+
+          if (message.type === "peer-connected") {
+            logDebug("Phone connected to signaling");
+            await maybeCreateOffer();
+            return;
+          }
+
+          if (message.type === "answer" && message.sdp) {
+            await peerConnection.setRemoteDescription({ type: "answer", sdp: message.sdp });
+            logDebug("Answer received and set");
+            return;
+          }
+
+          if (message.type === "ice-candidate" && message.data) {
+            await peerConnection.addIceCandidate(message.data);
+            return;
+          }
+
+          if (message.type === "sensor" && message.data) {
+            applyOrientation(message.data);
+            startProbeView("fallback-ws");
+            setConnectionState({ state: "Connected", transport: "fallback-ws", detail: "Receiving sensor packets over WebSocket" });
+            return;
+          }
+
+          if (message.type === "peer-disconnected") {
+            setConnectionState({ state: "Waiting", transport: "none", detail: "Phone disconnected" });
+            return;
+          }
+
+          if (message.type === "error") {
+            setConnectionState({ state: "Error", transport: "ws", detail: message.message || "Unknown signaling error" });
+          }
+        };
       };
 
       simulateConnect.addEventListener("click", () => {
-        startProbeView();
-        probeStatus.textContent = "Preview mode active";
+        startProbeView("preview");
+        setConnectionState({ state: "Connected", transport: "preview", detail: "Mouse simulation active" });
         window.addEventListener("mousemove", (event) => {
           const alpha = (event.clientX / window.innerWidth) * 180 - 90;
           const beta = (event.clientY / window.innerHeight) * 90 - 45;
@@ -342,16 +553,16 @@
         });
       });
 
-      setupThreeScene();
+      window.addEventListener("resize", () => {
+        renderPocusCanvas(pocusImage);
+        resizeThreeScene();
+      });
 
-      const channel = new BroadcastChannel("pocus-orientation");
-      channel.addEventListener("message", (event) => {
-        if (!event.data) {
-          return;
-        }
-        const { alpha, beta, gamma } = event.data;
-        startProbeView();
-        applyOrientation({ alpha, beta, gamma });
+      setupThreeScene();
+      initializeWebRTC();
+      setConnectionState({ state: "Waiting", transport: "none", detail: "Waiting for phone link and transport handshake" });
+      initializeSignaling().catch((error) => {
+        setConnectionState({ state: "Error", transport: "init", detail: error.message });
       });
     </script>
   </body>

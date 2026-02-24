@@ -42,7 +42,7 @@ jobs:
       - name: Build and push Backend image
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/backend
+          context: .
           file: ./apps/backend/Dockerfile
           push: true
           tags: ${{ env.BACKEND_IMAGE }}
@@ -74,6 +74,5 @@ jobs:
           key: ${{ secrets.LINODE_SSH_KEY }}
           script: |
             cd /opt/pocus-health
-            docker compose down || true
             docker compose pull
             docker compose up -d --force-recreate
