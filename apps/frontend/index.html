@@ -323,7 +323,8 @@
           modelUrl,
           (gltf) => {
             modelGroup = gltf.scene;
-            modelGroup.scale.set(1.4, 1.4, 1.4);
+            // modelGroup.scale.set(1.4, 1.4, 1.4);
+            modelGroup.scale.set(0.5, 0.5, 0.5);
             modelGroup.position.set(0, -0.6, 0);
             scene.add(modelGroup);
           },
