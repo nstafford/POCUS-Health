@@ -96,13 +96,13 @@
       }
     </style>
   </head>
-  <body class="font-sans text-slate-100">
-    <div class="relative min-h-screen overflow-hidden">
+  <body class="h-screen overflow-hidden font-sans text-slate-100">
+    <div class="relative h-screen overflow-hidden">
       <div class="pointer-events-none absolute inset-0 grid-overlay"></div>
       <div class="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"></div>
       <div class="pointer-events-none absolute bottom-0 left-0 h-96 w-96 rounded-full bg-sky-700/30 blur-[130px]"></div>
 
-      <div class="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12">
+      <div class="relative mx-auto flex h-full max-w-6xl flex-col gap-6 px-6 py-6">
         <header class="flex flex-col gap-4">
           <div class="flex items-center gap-3 text-sm uppercase tracking-[0.35em] text-slate-400">
             <span class="h-[1px] w-10 bg-slate-500"></span>
@@ -119,17 +119,17 @@
           </div>
         </header>
 
-        <main class="grid gap-6 lg:grid-cols-2">
-          <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
+        <main class="grid min-h-0 flex-1 gap-6 lg:grid-cols-2">
+          <section class="fade-in flex min-h-0 flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">POCUS SCREEN</span>
             </div>
-            <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
+            <div class="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="pocusCanvas" class="h-full w-full"></canvas>
             </div>
           </section>
 
-          <section class="fade-in flex flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
+          <section class="fade-in flex min-h-0 flex-col gap-4 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-5 shadow-2xl">
             <div class="flex items-center justify-between text-sm text-slate-300">
               <span class="font-mono">PHONE LINK</span>
               <div
@@ -139,7 +139,7 @@
                 Awaiting phone link
               </div>
             </div>
-            <div class="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
+            <div class="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-950">
               <canvas id="probeCanvas" class="h-full w-full"></canvas>
               <div
                 id="qrOverlay"
@@ -172,15 +172,23 @@
           </section>
         </main>
 
-        <section class="fade-in rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-4 shadow-2xl">
+        <section class="fade-in shrink-0 rounded-3xl border border-slate-700/50 bg-[color:var(--card)] p-4 shadow-2xl">
           <div class="mb-3 flex items-center justify-between">
             <span class="font-mono text-xs uppercase tracking-[0.25em] text-slate-400">Connection Debug</span>
-            <span
-              id="transportStatus"
-              class="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300"
-            >
-              Waiting
-            </span>
+            <div class="flex items-center gap-2">
+              <span
+                id="alphaValue"
+                class="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-slate-300"
+              >
+                Alpha: --°
+              </span>
+              <span
+                id="transportStatus"
+                class="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300"
+              >
+                Waiting
+              </span>
+            </div>
           </div>
           <pre
             id="debugLog"
@@ -212,6 +220,7 @@
       const simulateConnect = document.querySelector("#simulateConnect");
       const probeStatus = document.querySelector("#probeStatus");
       const transportStatus = document.querySelector("#transportStatus");
+      const alphaValue = document.querySelector("#alphaValue");
       const debugLog = document.querySelector("#debugLog");
 
       let ws = null;
@@ -357,6 +366,9 @@
         const y = typeof gamma === "number" ? toRad(gamma) : 0;
         const z = typeof alpha === "number" ? toRad(alpha) : 0;
         modelGroup.rotation.set(x, y, z);
+        if (alphaValue) {
+          alphaValue.textContent = `Alpha: ${typeof alpha === "number" ? alpha.toFixed(1) : "--"}°`;
+        }
       };
 
       const startProbeView = (transport = "unknown") => {
