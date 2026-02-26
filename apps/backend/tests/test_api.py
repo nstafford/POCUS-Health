@@ -55,12 +55,28 @@ class TestSessionEndpoints:
         assert response.status_code == 404
 
     def test_root_endpoint(self, client):
-        """Test the root endpoint."""
+        """Test the root endpoint serves frontend HTML."""
         response = client.get("/")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+    def test_health_endpoint(self, client):
+        """Test the health endpoint."""
+        response = client.get("/health")
         assert response.status_code == 200
         data = response.json()
         assert data["service"] == "POCUS-Health Signaling Server"
         assert data["status"] == "running"
+
+    def test_favicon_endpoint(self, client):
+        """Test favicon is served from the backend."""
+        response = client.get("/favicon.ico")
+        assert response.status_code == 200
+        assert response.headers["content-type"] in {
+            "image/x-icon",
+            "image/vnd.microsoft.icon",
+            "image/x-icon; charset=utf-8",
+        }
 
 
 class TestWebSocketSignaling:

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uuid
@@ -10,6 +11,20 @@ from datetime import datetime, timedelta
 import os
 
 app = FastAPI(title="POCUS-Health Signaling Server")
+
+
+def resolve_static_dir() -> Optional[str]:
+    candidate_dirs = [
+        os.path.join(os.path.dirname(__file__), "..", "static"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend"),
+    ]
+    for candidate in candidate_dirs:
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+static_dir = resolve_static_dir()
 
 # CORS for development
 app.add_middleware(
@@ -44,9 +59,19 @@ class CreateSessionResponse(BaseModel):
     phoneUrl: str
 
 
-@app.get("/")
-async def root():
+@app.get("/health")
+async def health():
     return {"service": "POCUS-Health Signaling Server", "status": "running"}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    if not static_dir:
+        raise HTTPException(status_code=404, detail="Static directory not found")
+    favicon_path = os.path.join(static_dir, "icons", "favicon.ico")
+    if not os.path.exists(favicon_path):
+        raise HTTPException(status_code=404, detail="Favicon not found")
+    return FileResponse(favicon_path)
 
 
 @app.post("/api/session", response_model=CreateSessionResponse)
@@ -196,8 +221,7 @@ async def startup_event():
 
 
 # Mount static files (frontend) - must be last
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-if os.path.exists(static_dir):
+if static_dir:
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 
